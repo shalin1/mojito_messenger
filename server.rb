@@ -14,6 +14,7 @@ post '/sms' do
   message = params
   body = message['Body']
   sender = message['From']
+  image = message['MediaUrl0']
 
   user = User.find_or_create_by(phone: sender)
   if user.admin?
@@ -22,22 +23,25 @@ post '/sms' do
       if body.downcase.start_with?('hell yeah')
         reply = 'Ok, sending it out!'
         sms.send(sender, reply)
-        sms.spam(session['pending_spam_message'])
+        sms.spam(session['pending_spam_message'], session['pending_spam_image'])
       else
         reply = 'Spam cancelled, nothing got sent'
         sms.send(sender, reply)
       end
       session['pending_spam_message'] = false
+      session['pending_spam_image'] = false
     when body.downcase.start_with?('spam')
       outgoing_message = body.split(' ')[1..-1].join(' ')
       session['pending_spam_message'] = outgoing_message
+      session['pending_spam_image'] = image
+      puts image
       reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  Reply 'hell yeah' to confirm!
 
 ----
 
 #{outgoing_message}
       "
-      sms.send(sender, reply)
+      sms.send(sender, reply, image)
     else
       reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
       sms.send(sender, reply)
