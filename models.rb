@@ -1,7 +1,7 @@
 require 'active_record'
 
 class User < ActiveRecord::Base
-  validates :phone, presence: true
+  validates :phone, presence: true, uniqueness: true
 
   def admin?
     admin

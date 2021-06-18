@@ -11,63 +11,67 @@ use Rack::Session::Cookie, key: 'rack.session',
 
 post '/sms' do
   sms = TwilioService.new
-  message = params
-  body = message['Body']
-  sender = message['From']
-  image = message['MediaUrl0']
+  body = params['Body']
+  sender = params['From']
+  image = params['MediaUrl0']
 
+  puts params
   user = User.find_or_create_by(phone: sender)
+  if !user.admin?
+    if user.subscribed
+      if body.downcase.start_with?('stop')
+        user.update!(subscribed:false)
+        sms.send(sender, "You've been unsubscribed. To get back on the list, just text in with your password.")
+        admin_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
+        sms.send_to_admins(admin_prefix + body)
+      else
+      reply_prefix = user.name.blank? ? "" : "Welcome back, #{user.name}"
+      sms.send(sender, reply_prefix + "Our mojito bots are reviewing your message, and will reply within 2 business days.")
+      admin_prefix = "Mojito message from #{user.name} [#{user.phone}]: "
+      sms.send_to_admins(admin_prefix + body)
+      end
+    else
+      if body.downcase.include?('mojito')
+        user.update!(subscribed:true)
+        sms.send(sender, 'Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.')
+        sms.send_to_admins("New sign up from phone number #{sender}!")
+      else
+       sms.send(sender, 'A mysterious door opens before you. What is the password?')
+       admin_prefix = "Mojito message from unsubscribed user at [#{user.phone}]: "
+       sms.send_to_admins(admin_prefix + body)
+      end
+    end
+  end
+
   if user.admin?
     case
-    when session['pending_spam_message']
-      if body.downcase.start_with?('hell yeah')
-        reply = 'Ok, sending it out!'
-        sms.send(sender, reply)
-        sms.spam(session['pending_spam_message'], session['pending_spam_image'])
-      else
-        reply = 'Spam cancelled, nothing got sent'
-        sms.send(sender, reply)
-      end
-      session['pending_spam_message'] = false
-      session['pending_spam_image'] = false
-    when body.downcase.start_with?('spam')
-      outgoing_message = body.split(' ')[1..-1].join(' ')
-      session['pending_spam_message'] = outgoing_message
-      session['pending_spam_image'] = image
+  when session['pending_spam_message']
+    if body.downcase.start_with?('hell yeah')
+      reply = 'Ok, sending it out!'
+      sms.send(sender, reply)
+      sms.spam(session['pending_spam_message'], session['pending_spam_image'])
+    else
+      reply = 'Spam cancelled, nothing got sent'
+      sms.send(sender, reply)
+    end
+    session['pending_spam_message'] = false
+    session['pending_spam_image'] = false
+  when body.downcase.start_with?('spam')
+    outgoing_message = body.split(' ')[1..-1].join(' ')
+    session['pending_spam_message'] = outgoing_message
+    session['pending_spam_image'] = image
 
-      reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  Reply 'hell yeah' to confirm!
+    reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  Reply 'hell yeah' to confirm!
 
 ----
 
 #{outgoing_message}
-      "
-      sms.send(sender, reply, image)
-    else
-      reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
-      sms.send(sender, reply)
-    end
-  end
-
-  if !user.admin?
-    if !user.name
-      session['new_user'] = true
-      return sms.send(sender, 'Welcome to Mojito messenger! What is your name?')
-    else
-      prefix = "Mojito message from #{user.name} at #{user.phone}: "
-      sms.send_to_admins(prefix + body)
-      return sms.send(sender, "Welcome back, #{user.name}! Our trained staff is reviewing your message and will be back to you shortly.")
+    "
+    sms.send(sender, reply, image)
+  else
+    reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
+    sms.send(sender, reply)
     end
 
-    if session['new_user']
-      name = body.split(' ').first
-      if !name
-        sms.send(sender, "Sorry, I didn't get that. What's your name?")
-      else
-        sms.send(sender, "Hi, #{name}!  If you ever want to leave this list, just text STOP.")
-        user.update!(name: name, subscribed: true)
-        sms.send_to_admins("New subscriber: #{user.name} at #{user.phone}")
-        session['new_user'] = false
-      end
-    end
   end
 end
