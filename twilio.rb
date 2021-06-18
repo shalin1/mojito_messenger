@@ -40,6 +40,7 @@ class TwilioService
 
   def spam(body,image)
     User.subscribed.each { |subscribed_user| send(subscribed_user.phone, body, image)}
+    send_to_admins("successfully sent out #{User.subscribed.count} messages")
   end
 
   private

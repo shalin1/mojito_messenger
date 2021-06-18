@@ -15,11 +15,10 @@ post '/sms' do
   sender = params['From']
   image = params['MediaUrl0']
 
-  puts params
   user = User.find_or_create_by(phone: sender)
   if !user.admin?
     if user.subscribed
-      if body.downcase.start_with?('stop')
+      if body.downcase.start_with?('stop')||body.downcase.start_with?('cancel')
         user.update!(subscribed:false)
         sms.send(sender, "You've been unsubscribed. To get back on the list, just text in with your password.")
         admin_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
@@ -43,8 +42,7 @@ post '/sms' do
     end
   end
 
-  if user.admin?
-    case
+  case
   when session['pending_spam_message']
     if body.downcase.start_with?('hell yeah')
       reply = 'Ok, sending it out!'
@@ -61,7 +59,7 @@ post '/sms' do
     session['pending_spam_message'] = outgoing_message
     session['pending_spam_image'] = image
 
-    reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  Reply 'hell yeah' to confirm!
+    reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  It will cost around $#{(User.subscribed.count / 30.0).round(2) }.  Reply 'hell yeah' to confirm!
 
 ----
 
@@ -71,7 +69,5 @@ post '/sms' do
   else
     reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
     sms.send(sender, reply)
-    end
-
   end
 end
