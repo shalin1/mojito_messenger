@@ -15,23 +15,8 @@ post '/sms' do
   body = message['Body']
   sender = message['From']
 
-  user = User.find_or_create_by(phone: sender) do
-    # block only runs for new user
-    session['new_user'] = true
-    return sms.send(sender, 'Welcome to Mojito messenger! What is your name?')
-  end
-
-  if session['new_user']
-    name = body.split(' ').first
-    if !name
-      sms.send(sender, "Sorry, I didn't get that. What's your name?")
-    else
-      sms.send(sender, "Hi, #{name}!  If you ever want to leave this list, just text STOP.")
-      user.update!(name: name, subscribed: true)
-      sms.send_to_admins("New subscriber: #{user.name} at #{user.phone}")
-      session['new_user'] = false
-    end
-  elsif user.admin?
+  user = User.find_or_create_by(phone: sender)
+  if user.admin?
     case
     when session['pending_spam_message']
       if body.downcase.start_with?('hell yeah')
@@ -51,15 +36,34 @@ post '/sms' do
 ----
 
 #{outgoing_message}
-"
+      "
       sms.send(sender, reply)
     else
       reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
       sms.send(sender, reply)
     end
-  else
-    prefix = "Mojito message from #{user.name} at #{user.phone}: "
+  end
 
-    sms.send_to_admins(prefix + body)
+  if !user.admin?
+    if !user.name
+      session['new_user'] = true
+      return sms.send(sender, 'Welcome to Mojito messenger! What is your name?')
+    else
+      return sms.send(sender, "Welcome back, #{user.name}! Our trained staff is reviewing your message and will be back to you shortly.")
+      prefix = "Mojito message from #{user.name} at #{user.phone}: "
+      sms.send_to_admins(prefix + body)
+    end
+
+    if session['new_user']
+      name = body.split(' ').first
+      if !name
+        sms.send(sender, "Sorry, I didn't get that. What's your name?")
+      else
+        sms.send(sender, "Hi, #{name}!  If you ever want to leave this list, just text STOP.")
+        user.update!(name: name, subscribed: true)
+        sms.send_to_admins("New subscriber: #{user.name} at #{user.phone}")
+        session['new_user'] = false
+      end
+    end
   end
 end
