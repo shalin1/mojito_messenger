@@ -9,4 +9,4 @@ production:
   encoding: unicode
   database: production
   pool: 5
-  host: <%= ENV['DATABASE_HOST'] %>
+  host: <%= ENV['DATABASE_URL'] %>
