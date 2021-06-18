@@ -34,7 +34,7 @@ post '/sms' do
       outgoing_message = body.split(' ')[1..-1].join(' ')
       session['pending_spam_message'] = outgoing_message
       session['pending_spam_image'] = image
-      puts image
+
       reply = "Are you sure you wanna spam the below to #{User.subscribed.count} recipients?  Reply 'hell yeah' to confirm!
 
 ----

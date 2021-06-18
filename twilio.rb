@@ -11,12 +11,23 @@ class TwilioService
       puts({ body: body, to: to, from: '+19412137305' })
     else
       begin
-        client.messages.create(
+        if image
+
+          client.messages.create(
           body: body,
           to: to,
           media_url: [image],
-          from: '+19412137305'
+          from: ENV["TWILIO_PHONE"]
         )
+
+        else
+
+          client.messages.create(
+            body: body,
+            to: to,
+            from: ENV["TWILIO_PHONE"]
+          )
+          end
       rescue Twilio::REST::TwilioError => e
         puts e.message
       end
