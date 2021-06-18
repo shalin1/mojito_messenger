@@ -6,6 +6,10 @@ class TwilioService
   end
 
   def send(to, body)
+    if ENV['DEVELOPMENT']
+      puts "SENDING"
+      puts({ body: body, to: to, from: '+19412137305' })
+    else
     begin
       client.messages.create(
         body: body,
@@ -14,6 +18,7 @@ class TwilioService
       )
     rescue Twilio::REST::TwilioError => e
       puts e.message
+    end
     end
   end
 

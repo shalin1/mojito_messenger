@@ -23,7 +23,7 @@ post '/sms' do
 
   if session['new_user']
     name = body.split(' ').first
-    if name
+    if !name
       sms.send(sender, "Sorry, I didn't get that. What's your name?")
     else
       sms.send(sender, "Hi, #{name}!  If you ever want to leave this list, just text STOP.")
@@ -32,8 +32,6 @@ post '/sms' do
       session['new_user'] = false
     end
   elsif user.admin?
-    puts session
-    puts 'session'
     case
     when session['pending_spam_message']
       if body.downcase.start_with?('hell yeah')
