@@ -49,9 +49,9 @@ post '/sms' do
       session['new_user'] = true
       return sms.send(sender, 'Welcome to Mojito messenger! What is your name?')
     else
-      return sms.send(sender, "Welcome back, #{user.name}! Our trained staff is reviewing your message and will be back to you shortly.")
       prefix = "Mojito message from #{user.name} at #{user.phone}: "
       sms.send_to_admins(prefix + body)
+      return sms.send(sender, "Welcome back, #{user.name}! Our trained staff is reviewing your message and will be back to you shortly.")
     end
 
     if session['new_user']
