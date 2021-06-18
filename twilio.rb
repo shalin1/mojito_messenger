@@ -1,8 +1,15 @@
 require 'dotenv/load'
 
 class TwilioService
-  def initialize
+  def initialize(incomingMessage)
     @client = Twilio::REST::Client.new(ENV['ACCOUNT_SID'], ENV['AUTH_TOKEN'])
+    @body = incomingMessage['Body']
+    @sender = incomingMessage['From']
+    @image = incomingMessage['MediaUrl0']
+  end
+
+  def reply(body, image = nil)
+    send(sender, body, image)
   end
 
   def send(to, body, image = nil)
@@ -12,22 +19,19 @@ class TwilioService
     else
       begin
         if image
-
           client.messages.create(
-          body: body,
-          to: to,
-          media_url: [image],
-          from: ENV["TWILIO_PHONE"]
-        )
-
+            body: body,
+            to: to,
+            media_url: [image],
+            from: ENV["TWILIO_PHONE"]
+          )
         else
-
           client.messages.create(
             body: body,
             to: to,
             from: ENV["TWILIO_PHONE"]
           )
-          end
+        end
       rescue Twilio::REST::TwilioError => e
         puts e.message
       end
@@ -45,5 +49,5 @@ class TwilioService
 
   private
 
-  attr_reader :client
+  attr_reader :client, :body, :sender, :image
 end

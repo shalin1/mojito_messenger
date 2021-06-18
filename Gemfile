@@ -3,6 +3,7 @@ ruby '3.0.1'
 
 gem 'activerecord'
 gem 'dotenv'
+gem 'e164'
 gem 'rake'
 gem 'sinatra'
 gem 'sinatra-activerecord'
