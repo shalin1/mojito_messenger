@@ -5,11 +5,6 @@ require 'twilio-ruby'
 require './models'
 require './twilio'
 
-ActiveRecord::Base.establish_connection(
-  adapter: 'sqlite3',
-  database:  'db/development.sqlite3'
-)
-
 use Rack::Session::Cookie, key: 'rack.session',
     path: '/',
     secret: 'can-be-anything-but-keep-a-secret'

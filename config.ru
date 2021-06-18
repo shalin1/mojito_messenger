@@ -1,2 +1,2 @@
-require '../mojito_messenger/server'
+require './server'
 run Sinatra::Application
