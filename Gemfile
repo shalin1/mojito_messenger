@@ -8,6 +8,7 @@ gem 'sinatra'
 gem 'sinatra-activerecord'
 gem 'pg'
 gem 'twilio-ruby'
+gem 'webrick'
 
 group :test, :development do
   gem 'rspec-html-matchers'
