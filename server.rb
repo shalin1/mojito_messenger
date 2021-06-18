@@ -25,7 +25,7 @@ post '/sms' do
         admin_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
         sms.send_to_admins(admin_prefix + body)
       else
-      reply_prefix = user.name.blank? ? "" : "Welcome back, #{user.name}"
+      reply_prefix = user.name.blank? ? "" : "Welcome back!"
       sms.reply(reply_prefix + "Our mojito bots are reviewing your message, and will reply within 2 business days.")
       admin_prefix = "Mojito message from #{user.name} [#{user.phone}]: "
       sms.send_to_admins(admin_prefix + body)
@@ -41,8 +41,7 @@ post '/sms' do
        sms.send_to_admins(admin_prefix + body)
       end
     end
-  end
-
+  else
   case
   when session['pending_dm_message'] && session['pending_dm_phone']
     if body.downcase.start_with?('ok')
@@ -67,13 +66,41 @@ post '/sms' do
     end
     session['pending_spam_message'] = false
     session['pending_spam_image'] = false
-  when body.downcase.start_with?('send')
-    user = User.find_by_name_or_phone(body.split(' ')[1])
+  when body.downcase.start_with?('add')
+    number = body.split(' ')[1]
+    name = body.split(' ')[2..-1].join(' ')
+    if !name || !number
+      sms.reply("I think you're trying to add somebody?  Your message should look like
 
-    if !user
+add <number> <name>")
+    else
+      existing_user = User.find_by_phone(number)
+      if existing_user
+        sms.reply("User exists! #{existing_user.name}'s name to #{name} at #{number}")
+        user.update!(name:name)
+    else
+      User.create!(name:name,phone:number,subscribed:true,admin:false)
+      sms.reply("Created user #{name} at #{E164.normalize(number)}")
+      sms.send(user.phone, 'Congrats! You are now subscribed to the Mojito Coast text list!  Reply here if you got questions, and if you ever wanna leave the list, just text STOP.')
+      end
+    end
+  when body.downcase.start_with?('send')
+    query = body.split(' ')[1]
+    search_results = User.find_by_name_or_phone(query)
+    puts search_results
+
+    if search_results.empty?
       message = "User #{query} not found, try a different name or a few digits from the phone number you seek."
       return sms.reply(message)
-    end
+    elsif search_results.length > 1
+      message = "Found the below potential recipients. Try a more specific search term, like their last name or a chunk of their phone number"
+      search_results.each_with_index do |res,idx|
+        message += "
+        #{idx + 0} #{res.name} at #{res.phone}"
+      end
+      session['possible_dm_recipients']=search_results
+      return sms.reply(message)
+    elsif search_results.length == 1
 
     outgoing_message = body.split(' ')[2..-1].join(' ')
     session['pending_dm_phone'] = user.phone
@@ -84,6 +111,10 @@ Recipient: #{user.display_name} @ #{user.phone}]
 
 "
     sms.send(sender, confirmation_prefix + outgoing_message, image)
+  else
+    message = "something went wrong."
+    sms.reply(message)
+    end
   when body.downcase.start_with?('spam')
     outgoing_message = body.split(' ')[1..-1].join(' ')
     session['pending_spam_message'] = outgoing_message
@@ -99,5 +130,6 @@ Recipient: #{user.display_name} @ #{user.phone}]
   else
     reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
     sms.send(sender, reply)
+  end
   end
 end
