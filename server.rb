@@ -72,7 +72,7 @@ post '/sms' do
 
     if !user
       message = "User #{query} not found, try a different name or a few digits from the phone number you seek."
-      return sms.send(sender, message)
+      return sms.reply(message)
     end
 
     outgoing_message = body.split(' ')[2..-1].join(' ')
