@@ -5,6 +5,11 @@ require 'twilio-ruby'
 require './models'
 require './twilio'
 
+ActiveRecord::Base.establish_connection(
+  adapter: 'sqlite3',
+  database:  'db/development.sqlite3'
+)
+
 use Rack::Session::Cookie, key: 'rack.session',
     path: '/',
     secret: 'can-be-anything-but-keep-a-secret'
@@ -58,7 +63,8 @@ post '/sms' do
       sms.send(sender, reply)
     end
   else
-    prefix = "Mojito message from #{user.name} at #{user.number}: "
+    prefix = "Mojito message from #{user.name} at #{user.phone}: "
+
     sms.send_to_admins(prefix + body)
   end
 end

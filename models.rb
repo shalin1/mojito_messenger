@@ -1,7 +1,5 @@
 require 'active_record'
 
-ActiveRecord::Base.establish_connection(ENV['DATABASE_URL'] || 'postgres://localhost/mydb')
-
 class User < ActiveRecord::Base
   validates :phone, presence: true
 
