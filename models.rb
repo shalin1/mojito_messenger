@@ -2,7 +2,9 @@ require 'active_record'
 
 class User < ActiveRecord::Base
   validates :phone, presence: true, uniqueness: true
-  before_save { self.name && self.name.downcase!}
+  validates :name, presence: true, uniqueness: true
+
+  before_save { self.name.downcase!}
 
   def self.find_by_name_or_phone(query)
     sanitized_query = query.strip.downcase
@@ -15,7 +17,7 @@ class User < ActiveRecord::Base
   end
 
   def self.find_by_phone(number)
-    self.find_by(phone:E164.normalize(number))
+    self.find_by(phone: E164.normalize(number))
   end
 
   def admin?

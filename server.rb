@@ -25,8 +25,8 @@ post '/sms' do
         admin_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
         sms.send_to_admins(admin_prefix + body)
       else
-      reply_prefix = user.name.blank? ? "" : "Welcome back!"
-      sms.reply(reply_prefix + "Our mojito bots are reviewing your message, and will reply within 2 business days.")
+      reply_prefix = user.name.blank? ? "" : "Welcome back, #{user.name}! "
+      sms.reply(reply_prefix + "A real life drunken mosquito customer support agent will see your text very soon.")
       admin_prefix = "Mojito message from #{user.name} [#{user.phone}]: "
       sms.send_to_admins(admin_prefix + body)
       end
@@ -42,6 +42,7 @@ post '/sms' do
       end
     end
   else
+
   case
   when session['pending_dm_message'] && session['pending_dm_phone']
     if body.downcase.start_with?('ok')
@@ -49,7 +50,7 @@ post '/sms' do
       sms.send(sender, reply)
       sms.send(session['pending_dm_phone'], session['pending_dm_message'], session['pending_dm_image'])
     else
-      reply = 'Your DM was cancelled, nothing got sent'
+      reply = 'Your message was cancelled, nothing got sent'
       sms.send(sender, reply)
     end
     session['pending_dm_message'] = false
@@ -57,7 +58,7 @@ post '/sms' do
     session['pending_dm_phone'] = false
   when session['pending_spam_message']
     if body.downcase.start_with?('hell yeah')
-      reply = 'Ok, sending it out!'
+      reply = 'Hell yeah, sending it out!'
       sms.send(sender, reply)
       sms.spam(session['pending_spam_message'], session['pending_spam_image'])
     else
@@ -67,21 +68,21 @@ post '/sms' do
     session['pending_spam_message'] = false
     session['pending_spam_image'] = false
   when body.downcase.start_with?('add')
-    number = body.split(' ')[1]
-    name = body.split(' ')[2..-1].join(' ')
-    if !name || !number
-      sms.reply("I think you're trying to add somebody?  Your message should look like
-
-add <number> <name>")
+    number = body.split(' ').drop(1).first
+    parsed_number = E164.normalize(number)
+    name = body.split(' ').drop(2).join(' ')
+    if name.to_s.empty? || name[0] == "1" || number.to_s.empty? || parsed_number == "+"
+      sms.reply("I think you're trying to add somebody to the list.
+Your message should look like `ADD <number> <name>`")
     else
-      existing_user = User.find_by_phone(number)
+      existing_user = User.find_by_phone(parsed_number) || User.find_by_name(name)
       if existing_user
-        sms.reply("User exists! #{existing_user.name}'s name to #{name} at #{number}")
+        sms.reply("User already exists! Try to REMOVE #{existing_user.name} at #{existing_user.number} if you need to make edits to that contact.")
         user.update!(name:name)
-    else
-      User.create!(name:name,phone:number,subscribed:true,admin:false)
-      sms.reply("Created user #{name} at #{E164.normalize(number)}")
-      sms.send(user.phone, 'Congrats! You are now subscribed to the Mojito Coast text list!  Reply here if you got questions, and if you ever wanna leave the list, just text STOP.')
+      else
+        User.create(name:name, phone:number, subscribed:true, admin:false)
+        sms.reply("Created user #{name} at #{E164.normalize(number)}")
+        sms.send(parsed_number, 'Congrats!  You have been subscribed to the Mojito Coast text list!  If you ever wanna leave the list, just text STOP.')
       end
     end
   when body.downcase.start_with?('send')
@@ -107,13 +108,13 @@ add <number> <name>")
     session['pending_dm_message'] = outgoing_message
     session['pending_dm_image'] = image
     confirmation_prefix = "Are you sure you want to send the below? Reply 'OK' if so.
-Recipient: #{user.display_name} @ #{user.phone}]
+Recipient: #{user.name.capitalize} @ #{user.phone}]
 
 "
     sms.send(sender, confirmation_prefix + outgoing_message, image)
-  else
-    message = "something went wrong."
-    sms.reply(message)
+    else
+      message = "something went wrong."
+      sms.reply(message)
     end
   when body.downcase.start_with?('spam')
     outgoing_message = body.split(' ')[1..-1].join(' ')
@@ -127,8 +128,13 @@ Recipient: #{user.display_name} @ #{user.phone}]
 #{outgoing_message}
     "
     sms.send(sender, reply, image)
+  when body.downcase.start_with?('everybody')
+    reply_prefix = "Here's everybody on your list right now."
+    contacts = User.all.map{|u|"#{u.name} @ #{u.number}
+"}
+    sms.reply(reply_prefix + contacts)
   else
-    reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM' and 'SEND'"
+    reply = "I didn't get that, #{user.name}! Try again to prefix your message with a command. Valid commands include 'SPAM', 'SEND', 'ADD'"
     sms.send(sender, reply)
   end
   end
