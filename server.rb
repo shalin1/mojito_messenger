@@ -91,7 +91,7 @@ reply "I AM BORING" to get off this crazy ride!'
       sms.reply(confirm_name_message_to_user)
 
       session['enter_name'] = false
-      session['confirm_name'] = name
+      session['confirm_name'] = enter_name_name
 
       return
     end
