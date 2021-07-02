@@ -20,7 +20,7 @@ post '/sms' do
   confirm_name_message_to_user = "Are you sure you want your name to be #{enter_name_name} in our system?
 
 
-Reply with a `sure thing, hoss` to confirm"
+Reply with a `ok hoss` to confirm"
 
   new_subscriber_signed_themself_up_message= "We still need your sexy name, sexy. Text your sexy name to this number and You will be subscribed to the Mojito Coast invite list!
 If you ever wanna leave the list, just text I AM BORING to this number.
