@@ -11,22 +11,26 @@ use Rack::Session::Cookie, key: 'rack.session',
     secret: 'can-be-anything-but-keep-a-secret'
 
 post '/sms' do
-  copy = {
-    welcome: "Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.",
-  }
-  puts copy[:welcome]
   sms = TwilioService.new(params)
+  user = User.find_or_create_by(phone: sender)
   body = params['Body']
   sender = E164.normalize(params['From'])
   image = params['MediaUrl0']
+  enter_name_name = body.split(' ').first
+  confirm_name_message_to_user = "Are you sure you want your name to be #{enter_name_name} in our system?
 
-  user = User.find_or_create_by(phone: sender)
+Reply with a `sure thing, hoss` to confirm"
+  new_subscriber_signed_themself_up_message= "Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.",
+  unsubscribe_message = "You've been unsubscribed. If this was a mistake, just drop us a line, otherwise, happy trails!"
+  admin_bye_bye_message_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
+  reply_to_unsubscribed_user_messages_with_no_password = 'A mysterious door opens before you. What is the password?'
+  outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back, #{user.name}! ") + "A mosquito agent will Be back with you shortly."
+  subscribed_user_with_no_name_but_we_ask_for_it_reply = "Please hold, an agent will be with you shortly.  While waiting, could you please reply with your name?"
 
-  if body.downcase.start_with?('stop')||body.downcase.start_with?('cancel')
+  if body.downcase.start_with?('i am boring')||body.downcase('unsubscribe')||body.downcase.start_wtiH('cance')||body.downcase.start_with?('cancel')
     user.update!(subscribed:false)
-    sms.reply("You've been unsubscribed. If this was a mistake, just drop us a line, otherwise, happy trails!")
-    admin_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
-    sms.send_to_admins(admin_prefix + body)
+    sms.reply(unsubscribe_message )
+    sms.send_to_admins(admin_bye_bye_message_prefix + body)
 
     return
   end
@@ -34,12 +38,12 @@ post '/sms' do
   if !user.subscribed && !user.admin?
     if body.downcase.include?('mojito')
       user.update!(subscribed: true)
-      sms.reply( copy[:welcome] )
+      sms.reply(new_subscriber_signed_themself_up_message)
       sms.send_to_admins("New sign up from phone number #{sender}!")
 
       session['enter_name'] = true
     else
-      sms.reply( 'A mysterious door opens before you. What is the password?')
+      sms.reply(reply_to_unsubscribed_user_messages_with_no_password)
       admin_prefix = "Mojito message from unsubscribed user at [#{user.phone}]: "
       sms.send_to_admins(admin_prefix + body)
     end
@@ -49,8 +53,7 @@ post '/sms' do
 
   if !user.admin?
     if user.name
-      reply_prefix = user.name.blank? ? "" : "Welcome back, #{user.name}! "
-      sms.reply(reply_prefix + "A mosquito agent will Be back with you shortly.")
+      sms.reply(outgoing_message_to_subscribed_user_when_they_text)
       admin_prefix = "Mojito message from #{user.name} [#{user.phone}]: "
       sms.send_to_admins(admin_prefix + body)
 
@@ -72,10 +75,7 @@ post '/sms' do
     end
 
     if session['enter_name']
-      name = body.split(' ').first
-      sms.reply("Are you sure you want your name to be #{name} in our system?
-
-Reply with a `sure thing, hoss` to confirm")
+      sms.reply(confirm_name_message_to_user)
 
       session['enter_name'] = false
       session['confirm_name'] = name
@@ -84,7 +84,7 @@ Reply with a `sure thing, hoss` to confirm")
     end
 
     if user.name.blank?
-      sms.reply("Please hold, an agent will be with you shortly.  While waiting, could you please reply with your name?")
+      sms.reply(subscribed_user_with_no_name_but_we_ask_for_it_reply)
       admin_prefix = "Mojito message from an unnamed user at [#{user.phone}]: "
       sms.send_to_admins(admin_prefix + body)
 
@@ -203,7 +203,7 @@ Recipient: #{recipient.name ? recipient.name.capitalize : ""} @ #{recipient.phon
       u = User.create(phone: E164.normalize(number), name: name, subscribed: true, admin: false)
       sms.send(u.phone, 'Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with any questions, and an agent will be with you shortly.
 
-reply STOP to get off this crazy ride!')
+reply "I AM BORING" to get off this crazy ride!')
       sms.reply("OK! Inviting #{u.name || "an unnamed user"} at #{u.phone}")
 
       return
