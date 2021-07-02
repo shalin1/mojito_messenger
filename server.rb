@@ -36,7 +36,7 @@ reply "I AM BORING" to get off this crazy ride!'
 
   reply_to_unsubscribed_user_messages_with_no_password = "you're making a great choice mochaca, a mysterious door opens before you. What is the password?"
 
-  outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back to the Coast passionflower, #{user.name}! ") + "One of our sexy mojito agents will Be back with you shortly. Pineapples..."
+  outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back to the Coast #{user.name}! ") + "One of our sexy mojito agents will Be back with you within the hour, passionflower."
 
   subscribed_user_with_no_name_but_we_ask_for_it_reply = "Please hold, one of our sexy agents will be with you shortly.  While waiting, could you please exhale slowly and reply with your name?"
 
