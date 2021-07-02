@@ -11,6 +11,10 @@ use Rack::Session::Cookie, key: 'rack.session',
     secret: 'can-be-anything-but-keep-a-secret'
 
 post '/sms' do
+  copy = {
+    welcome: "Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.",
+  }
+  puts copy[:welcome]
   sms = TwilioService.new(params)
   body = params['Body']
   sender = E164.normalize(params['From'])
@@ -30,7 +34,7 @@ post '/sms' do
   if !user.subscribed && !user.admin?
     if body.downcase.include?('mojito')
       user.update!(subscribed: true)
-      sms.reply( 'Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.')
+      sms.reply( copy[:welcome] )
       sms.send_to_admins("New sign up from phone number #{sender}!")
 
       session['enter_name'] = true
@@ -209,7 +213,7 @@ reply STOP to get off this crazy ride!')
   end
 end
 
-# TODO: refine below subscription case if needed by client. needs to handle validations gracefully.
+# TODO: refine below subscription case if needed by ori. needs to handle validations gracefully.
 #      if body.downcase.start_with?('everybody')
 #      reply_prefix = "Here's everybody on your list right now."
 #      contacts = User.all.map{|u|"#{u.name} @ #{u.number}
