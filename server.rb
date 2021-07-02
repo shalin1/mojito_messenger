@@ -12,9 +12,9 @@ use Rack::Session::Cookie, key: 'rack.session',
 
 post '/sms' do
   sms = TwilioService.new(params)
+  sender = E164.normalize(params['From'])
   user = User.find_or_create_by(phone: sender)
   body = params['Body']
-  sender = E164.normalize(params['From'])
   image = params['MediaUrl0']
   enter_name_name = body.split(' ').first
   confirm_name_message_to_user = "Are you sure you want your name to be #{enter_name_name} in our system?
@@ -27,7 +27,7 @@ Reply with a `sure thing, hoss` to confirm"
   outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back, #{user.name}! ") + "A mosquito agent will Be back with you shortly."
   subscribed_user_with_no_name_but_we_ask_for_it_reply = "Please hold, an agent will be with you shortly.  While waiting, could you please reply with your name?"
 
-  if body.downcase.start_with?('i am boring')||body.downcase('unsubscribe')||body.downcase.start_wtiH('cance')||body.downcase.start_with?('cancel')
+  if body.downcase.start_with?('i am boring')||body.downcase.start_with?('unsubscribe')||body.downcase.start_with?('cance')||body.downcase.start_with?('cancel')
     user.update!(subscribed:false)
     sms.reply(unsubscribe_message )
     sms.send_to_admins(admin_bye_bye_message_prefix + body)
@@ -63,10 +63,10 @@ Reply with a `sure thing, hoss` to confirm"
     if session['confirm_name']
       if body.downcase.include?('hoss')
         user.update!(name: session['confirm_name'])
-        sms.reply("You got it, #{session['confirm_name']}!  Talk more soon.")
+        sms.reply("You got it, #{session['confirm_name']} confirmed!")
         sms.send_to_admins("#{session['confirm_name']} just confirmed their name for number #{user.phone}.")
       else
-        sms.reply("Ok, name not saved.")
+        sms.reply("Name not set. I'll ask again next time you text.")
       end
 
       session['enter_name'] = false
@@ -95,22 +95,6 @@ Reply with a `sure thing, hoss` to confirm"
   end
 
   if user.admin?
-    if session['pending_dm_message'] && session['pending_dm_phone']
-      if body.downcase.start_with?('ok')
-        reply = 'Rad, sending it out!'
-        sms.send(sender, reply)
-        sms.send(session['pending_dm_phone'], session['pending_dm_message'], session['pending_dm_image'])
-      else
-        reply = 'Your message was cancelled, nothing got sent'
-        sms.send(sender, reply)
-      end
-      session['pending_dm_message'] = false
-      session['pending_dm_image'] = false
-      session['pending_dm_phone'] = false
-
-      return
-    end
-
     if session['pending_spam_message']
       if body.downcase.start_with?('hell yeah')
         reply = 'Hell yeah, sending it out!'
@@ -149,14 +133,9 @@ Reply with a `sure thing, hoss` to confirm"
       elsif search_results.length == 1
         recipient = search_results.first
         outgoing_message = body.split(' ')[2..-1].join(' ')
-        session['pending_dm_phone'] = recipient.phone
-        session['pending_dm_message'] = outgoing_message
-        session['pending_dm_image'] = image
-        confirmation_prefix = "Are you sure you want to send the below? Reply 'OK' if so.
-Recipient: #{recipient.name ? recipient.name.capitalize : ""} @ #{recipient.phone}]
-
-"
-        sms.send(sender, confirmation_prefix + outgoing_message, image)
+        reply = "Rad, sending it out! to #{recipient.name} at #{recipient.phone}."
+        sms.send(sender, reply)
+        sms.send(recipient.phone, outgoing_message, image)
       else
         message = "something went wrong."
         sms.reply(message)
