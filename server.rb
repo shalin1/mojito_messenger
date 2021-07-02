@@ -175,7 +175,7 @@ Reply with a `sure thing, hoss` to confirm"
         return
       end
       if User.find_by_phone(number)
-        sms.reply("the phone number #{number} already exists")
+        sms.reply("the phone number #{number} for #{User.find_by_phone(number).name} already exists")
         return
       end
 
