@@ -19,13 +19,26 @@ post '/sms' do
   enter_name_name = body.split(' ').first
   confirm_name_message_to_user = "Are you sure you want your name to be #{enter_name_name} in our system?
 
+
 Reply with a `sure thing, hoss` to confirm"
-  new_subscriber_signed_themself_up_message= "Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with your name to finish sign up. And if you ever wanna leave the list, just text STOP.",
-  unsubscribe_message = "You've been unsubscribed. If this was a mistake, just drop us a line, otherwise, happy trails!"
+
+  new_subscriber_signed_themself_up_message= "We still need your sexy name, Text your name to this number and You will be subscribed to the Mojito Coast invite list!
+If you ever wanna leave the list, just text I AM BORING to this number.
+Coconuts!"
+
+  user_got_signed_up_by_admin_message = 'Congratulations! You are now subscribed to the Mojito Coast invite list! you got questions?, we probably have answers. our sexy agents will answer those little fuckers. live the life you deserve.
+
+reply "I AM BORING" to get off this crazy ride!'
+
+  unsubscribe_message = "You've been unsubscribed. If this was a mistake, which it was, just drop us a line, otherwise,  may you find contentment in some dreary temperate zone!"
+
   admin_bye_bye_message_prefix = "#{user.name} [#{user.phone}] left the list with this message: "
-  reply_to_unsubscribed_user_messages_with_no_password = 'A mysterious door opens before you. What is the password?'
-  outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back, #{user.name}! ") + "A mosquito agent will Be back with you shortly."
-  subscribed_user_with_no_name_but_we_ask_for_it_reply = "Please hold, an agent will be with you shortly.  While waiting, could you please reply with your name?"
+
+  reply_to_unsubscribed_user_messages_with_no_password = "you're making a great choice mochaca, a mysterious door opens before you. What is the password?"
+
+  outgoing_message_to_subscribed_user_when_they_text = (user.name.blank? ? "" : "Welcome back to the Coast passionflower, #{user.name}! ") + "One of our sexy mojito agents will Be back with you shortly. Pineapples..."
+
+  subscribed_user_with_no_name_but_we_ask_for_it_reply = "Please hold, one of our sexy agents will be with you shortly.  While waiting, could you please exhale slowly and reply with your name?"
 
   if body.downcase.start_with?('i am boring')||body.downcase.start_with?('unsubscribe')||body.downcase.start_with?('cance')||body.downcase.start_with?('cancel')
     user.update!(subscribed:false)
@@ -180,9 +193,7 @@ Reply with a `sure thing, hoss` to confirm"
       end
 
       u = User.create(phone: E164.normalize(number), name: name, subscribed: true, admin: false)
-      sms.send(u.phone, 'Congrats! You are now subscribed to the Mojito Messenger mailing list! Please reply with any questions, and an agent will be with you shortly.
-
-reply "I AM BORING" to get off this crazy ride!')
+      sms.send(u.phone, user_got_signed_up_by_admin_message)
       sms.reply("OK! Inviting #{u.name || "an unnamed user"} at #{u.phone}")
 
       return
