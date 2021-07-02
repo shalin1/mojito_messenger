@@ -22,7 +22,7 @@ post '/sms' do
 
 Reply with a `sure thing, hoss` to confirm"
 
-  new_subscriber_signed_themself_up_message= "We still need your sexy name, Text your name to this number and You will be subscribed to the Mojito Coast invite list!
+  new_subscriber_signed_themself_up_message= "We still need your sexy name, sexy. Text your sexy name to this number and You will be subscribed to the Mojito Coast invite list!
 If you ever wanna leave the list, just text I AM BORING to this number.
 Coconuts!"
 
