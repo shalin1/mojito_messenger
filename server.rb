@@ -193,7 +193,7 @@ reply "I AM BORING" to get off this crazy ride!'
       end
 
       u = User.create(phone: E164.normalize(number), name: name, subscribed: true, admin: false)
-      sms.send(u.phone, user_got_signed_up_by_admin_message)
+      # sms.send(u.phone, user_got_signed_up_by_admin_message)
       sms.reply("OK! Inviting #{u.name || "an unnamed user"} at #{u.phone}")
 
       return
